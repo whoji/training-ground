@@ -1,0 +1,13 @@
+# create from Dockerfile
+docker build .
+
+# run it
+docker run -p 80:80 <docker_id>
+# -p <your_external_localhost_port>:<inside_container_port> 
+
+# rename
+docker tag <docker_id> <your_name/container_name:lastest>
+
+# publish
+docker login
+docker push <your_name/container_name:lastest>
