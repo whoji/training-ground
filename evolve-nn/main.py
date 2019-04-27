@@ -92,16 +92,16 @@ def print_networks(networks):
 
 def main():
     """Evolve a network."""
-    generations = 10  # Number of times to evole the population.
-    population = 20   # Number of networks in each generation.
+    generations = 5 #10  # Number of times to evole the population.
+    population = 10 #20   # Number of networks in each generation.
     dataset = 'mnist' # 'cifar10'
 
     nn_param_choices = {
-        'nb_neurons': [64, 128, 256, 512, 768, 1024],
-        'nb_layers': [1, 2, 3, 4],
+        'nb_neurons': [16, 32, 64, 128],  #256, 512, 768, 1024],
+        'nb_layers': [1, 2, 3], # 4],
         'activation': ['relu', 'elu', 'tanh', 'sigmoid'],
-        'optimizer': ['rmsprop', 'adam', 'sgd', 'adagrad',
-                      'adadelta', 'adamax', 'nadam'],
+        'optimizer': ['rmsprop', 'adam', 'sgd']# 'adagrad',
+                      # 'adadelta', 'adamax', 'nadam'],
     }
 
     logging.info("***Evolving %d generations with population %d***" %

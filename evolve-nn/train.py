@@ -114,7 +114,7 @@ def train_and_score(network, dataset):
 
     model.fit(x_train, y_train,
               batch_size=batch_size,
-              epochs=10000,  # using early stopping, so no real limit
+              epochs=100, #10000,  # using early stopping, so no real limit
               verbose=0,
               validation_data=(x_test, y_test),
               callbacks=[early_stopper])
