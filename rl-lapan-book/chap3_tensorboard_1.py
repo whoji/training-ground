@@ -13,3 +13,5 @@ if __name__ == '__main__':
 			writer.add_scalar(name, val, angle)
 	writer.close()
 
+# then run: 
+# > tensorboard --logdir runs --host localhost
