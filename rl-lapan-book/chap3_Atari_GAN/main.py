@@ -8,14 +8,14 @@ import gym.spaces
 import numpy as np
 import GAN
 
-log = gym.logger
-log.set_level(gym.logger.INFO)
-
-
 BATCH_SIZE = 16
 IMAGE_SIZE = 64 # dimension input image will be rescaled
 REPORT_EVERY_ITER = 100
 SAVE_IMAGE_EVERY_ITER = 1000
+
+log = gym.logger
+log.set_level(gym.logger.INFO)
+
 
 class InputWrapper(gym.ObservationWrapper):
     """
