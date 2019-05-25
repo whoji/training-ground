@@ -24,7 +24,7 @@ class Net(nn.Module):
 			nn.ReLU(),
 			nn.Linear(hidden_size, n_action)
 		)
-		
+
 	def forward(self, x):
 		return self.net(x)
 
@@ -101,7 +101,7 @@ if __name__ == '__main__':
 		writer.add_scalar("ret_mu", return_mean, i)
 		writer.add_scalar("ret_cut", return_cutoff, i)
 
-		if return_mean > 199: 
+		if return_mean > 199:
 			print("GGWP: Solved!")
 			break
 
