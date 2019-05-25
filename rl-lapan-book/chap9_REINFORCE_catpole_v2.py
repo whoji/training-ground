@@ -15,7 +15,7 @@ GAMMA = 0.99
 LEARNING_RATE = 0.01 #0.0005
 EPISODE_TO_TRAIN = 4
 ENV_NAME = "CartPole-v0"
-HIDDEN_SIZE = 128    # width of the NN
+HIDDEN_SIZE = 32    # width of the NN
 STOP_CRITERIA = 195
 
 Episode = namedtuple('Episode', field_names=['return_','steps'])
@@ -66,6 +66,28 @@ def iterate_episodes(env, net):
             s_new = env.reset()
 
         s = s_new
+
+def watch_with_render(env, net, episodes, horizon):
+    # import pdb; pdb.set_trace()
+    for ep in range(episodes):
+        s = env.reset()
+        frames = 0
+        for _ in range(horizon):
+            env.render()
+            #a = env.action_space.sample()
+            s_v = torch.FloatTensor([s])
+            a_prob_v = nn.Softmax(dim=1)(net(s_v))
+            a_prob = a_prob_v.data.numpy()[0]
+            a = np.random.choice(len(a_prob), p = a_prob)
+            s_new, r, terminal, _ = env.step(a)
+            if terminal:
+                print("finished %d/%d episode !! Frames=%d" % (ep, 20, frames))
+                frames = 0
+                break
+            else:
+                frames += 1
+                s = s_new
+    env.close()
 
 
 if __name__ == '__main__':
@@ -121,3 +143,6 @@ if __name__ == '__main__':
         batch_s, batch_a, batch_r = [], [], []
 
     writer.close()
+
+    # render some runs of episodes
+    watch_with_render(env, net, episodes=20, horizon=1000)
