@@ -1,6 +1,7 @@
 import numpy as np
 import collections
 import torch
+import torch.nn as nn
 
 Exp = collections.namedtuple('Exp', field_names=['s','a','r','terminal','s_new'])
 
@@ -62,14 +63,15 @@ def calc_loss(batch, net, tgt_net, device="cpu", gamma = 0.99):
 
     s_v = torch.tensor(s).to(device)
     s_new_v = torch.tensor(s_new).to(device)
-    a_v = torch.tensor(a).to(device)
+    a_v = torch.LongTensor(a).to(device)
     r_v = torch.tensor(r).to(device)
-    terminal_mask = torch.ByteTensor(s).to(device)
+    terminal_mask = torch.ByteTensor(terminal).to(device)
 
     state_action_val = net(s_v).gather(1, a_v.unsqueeze(-1)).squeeze(-1)
-    nett_state_val = tgt_net(s_new_v).mex(1)[0]
+    next_state_val = tgt_net(s_new_v).max(1)[0]
     next_state_val[terminal_mask] = 0.0
     next_state_val = next_state_val.detach()
     expected_state_action_val = next_state_val * gamma + r_v
 
-    loss = nn.MSELoss()(state_action_val - expected_state_action_val)
+    loss = nn.MSELoss()(state_action_val, expected_state_action_val)
+    return loss
