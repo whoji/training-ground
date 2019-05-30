@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
-LR = 0.01
+LR = 100
 
 class SineWaveTask:
     def __init__(self):
@@ -51,7 +51,7 @@ class SineWaveTask:
     def plot(self):
         x, y = self.test_set(size=100)
         plt.plot(x, y)
-        x, y = self.training_set(size=10)
+        x, y = self.training_set(size=100)
         plt.plot(x, y, '^')
 
 
@@ -97,14 +97,15 @@ class PolyFitModel:
 
     # go read this
     # https://ml-cheatsheet.readthedocs.io/en/latest/gradient_descent.html
+    # https://towardsdatascience.com/gradient-descent-in-python-a0d07285742f
 
     def grad_loss(self, x, y):
         ret = np.zeros(self.degree+1)
         f = [self.f(xj) for xj in x]
         for i in range(self.degree+1):
             for j in range(len(x)):
-                ret[i] = 2 * (f[j] - y[j]) * x[j] ** (self.degree - i)
-            ret[i] = 1 * ret[i] / len(x)
+                ret[i] = - 2 * (y[j] - f[j]) * x[j] ** (self.degree - i)
+            ret[i] = ret[i] / len(x)
         return ret
 
     def loss(self, x, y):
@@ -115,16 +116,17 @@ class PolyFitModel:
         return ret / len(y)
 
     def update_model(self, x, y, lr=LR):
-        grad = self.grad_loss(x, y)
-        print(grad)
         print(self.loss(x, y))
+        grad = self.grad_loss(x, y)
+        # print(self)
+        # print(grad)
         for i in range(self.degree+1):
-            self.w[i] += lr * grad[i]
+            self.w[i] += lr * grad[i] / len(x)
 
-    def plot(self, x, y):
+    def plot(self, x, y, c = 'blue'):
         x_test = np.linspace(-5, 5, 100)
         y_test = [self.f(xx) for xx in x_test]
-        plt.plot(x_test, y_test)
+        plt.plot(x_test, y_test, color=c)
         plt.plot(x, y, '^')
 
 
@@ -132,7 +134,7 @@ class PolyFitModel:
 sw0 = SineWaveTask()
 sw0.plot()
 
-m0 = PolyFitModel(2)
+m0 = PolyFitModel(1)
 
 
 # m0.grad_loss(list(sw0.train_x), list(sw0.train_y))
@@ -143,9 +145,19 @@ y = list(sw0.train_y)
 m0.loss(x, y)
 m0.grad_loss(x, y)
 
-'''
-m0.update_model(x,y); print(m0); m0.plot(x,y); plt.show()
-'''
+
+# m0.update_model(x,y); print(m0); m0.plot(x,y,'r'); #plt.show()
+# m0.update_model(x,y); print(m0); m0.plot(x,y,'g'); #plt.show()
+# m0.update_model(x,y); print(m0); m0.plot(x,y,'b'); # plt.show()
+# m0.update_model(x,y); print(m0); m0.plot(x,y,'yellow'); plt.show()
+
+m0.update_model(x,y);  m0.plot(x,y,'b')
+for _ in range(50):
+    m0.update_model(x,y); m0.plot(x,y,'r');
+
+m0.update_model(x,y);  m0.plot(x,y,'g')
+plt.show()
+
 
 
 pdb.set_trace()
