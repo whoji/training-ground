@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pdb
 
-LR = 100
+LR =  0.01
 
 class SineWaveTask:
     def __init__(self):
@@ -17,19 +17,8 @@ class SineWaveTask:
         self.train_y = None
 
     def f(self, x):
-        return self.a * np.sin(x + self.b)
-
-    # def training_set(self, size=10, force_new=False):
-    #     if self.train_x is None and not force_new:
-    #         self.train_x = np.random.uniform(-5, 5, size)
-    #         x = self.train_x
-    #     elif not force_new:
-    #         x = self.train_x
-    #     else:
-    #         x = np.random.uniform(-5, 5, size)
-    #     y = self.f(x)
-    #     # return torch.Tensor(x), torch.Tensor(y)
-    #     return x, y
+        # return self.a * x + self.b + np.random.uniform(0.1, 5.0, len(x))
+        return self.a * np.sin(0.7*x + self.b)
 
     def training_set(self, size=10):
         self.train_x = np.random.uniform(-5, 5, size)
@@ -44,31 +33,12 @@ class SineWaveTask:
         # return torch.Tensor(x), torch.Tensor(y)
         return x, y
 
-    def plot(self, *args, **kwargs):
-        x, y = self.test_set(size=100)
-        return plt.plot(x, y, *args, **kwargs)
-
     def plot(self):
         x, y = self.test_set(size=100)
         plt.plot(x, y)
         x, y = self.training_set(size=100)
         plt.plot(x, y, '^')
 
-
-# SineWaveTask().plot()
-# SineWaveTask().plot()
-# SineWaveTask().plot()
-# plt.show()
-
-
-# pdb.set_trace()
-
-# for _ in range(50):
-#     SineWaveTask().plot(color='black')
-# plt.show()
-
-
-####
 
 class PolyFitModel:
     def __init__(self, degree, lr=0.01):
@@ -89,22 +59,12 @@ class PolyFitModel:
             ret += self.w[i] *  (x ** (self.degree-i))
         return ret
 
-    # def df(self, x):
-    #     assert len(x) == self.degree
-    #     ret = 0.0
-    #     for i in range(self.degree):
-    #         ret += (self.degree-i) * self.w[i]  *  (x[i] ** (self.degree-i-1))
-
-    # go read this
-    # https://ml-cheatsheet.readthedocs.io/en/latest/gradient_descent.html
-    # https://towardsdatascience.com/gradient-descent-in-python-a0d07285742f
-
     def grad_loss(self, x, y):
         ret = np.zeros(self.degree+1)
         f = [self.f(xj) for xj in x]
         for i in range(self.degree+1):
             for j in range(len(x)):
-                ret[i] = - 2 * (y[j] - f[j]) * x[j] ** (self.degree - i)
+                ret[i] += (- 2 * (y[j] - f[j]) * x[j] ** (self.degree - i) )
             ret[i] = ret[i] / len(x)
         return ret
 
@@ -116,12 +76,12 @@ class PolyFitModel:
         return ret / len(y)
 
     def update_model(self, x, y, lr=LR):
-        print(self.loss(x, y))
+        #print("%s  |  loss: %.3f" % (self, self.loss(x, y)))
         grad = self.grad_loss(x, y)
         # print(self)
-        # print(grad)
+        #print("grad: "+str(grad))
         for i in range(self.degree+1):
-            self.w[i] += lr * grad[i] / len(x)
+            self.w[i] -= lr * grad[i] / len(x)
 
     def plot(self, x, y, c = 'blue'):
         x_test = np.linspace(-5, 5, 100)
@@ -130,37 +90,62 @@ class PolyFitModel:
         plt.plot(x, y, '^')
 
 
+class MAML(object):
+    """docstring for MAML"""
+    def __init__(self, n_sets, n_shots, lr_a, lr_b):
+        self.n_sets = n_sets
+        self.n_shots = n_shots
+        self.meta_train_set = self.get_meta_set(n_sets)
+        self.meta_test_set = self.get_meta_set(n_sets)
+        self.meta_model = PolyFitModel(lr =lr_b)
+        self.lr_a, self.lr_b = lr_a, lr_b
 
-sw0 = SineWaveTask()
-sw0.plot()
+    def get_meta_set(self, n):
+        for i in range(n):
+            task = SineWaveTask()
+            append(task)
 
-m0 = PolyFitModel(1)
+    def train(self):
+        for task in self.meta_train_set:
+            poly_model_i = self.meta_model.clone()
+            ploy_model_i
+            # TODO
+            # WIP
+            raise NotImplementedError
 
-
-# m0.grad_loss(list(sw0.train_x), list(sw0.train_y))
-
-
-x = list(sw0.train_x)
-y = list(sw0.train_y)
-m0.loss(x, y)
-m0.grad_loss(x, y)
-
-
-# m0.update_model(x,y); print(m0); m0.plot(x,y,'r'); #plt.show()
-# m0.update_model(x,y); print(m0); m0.plot(x,y,'g'); #plt.show()
-# m0.update_model(x,y); print(m0); m0.plot(x,y,'b'); # plt.show()
-# m0.update_model(x,y); print(m0); m0.plot(x,y,'yellow'); plt.show()
-
-m0.update_model(x,y);  m0.plot(x,y,'b')
-for _ in range(50):
-    m0.update_model(x,y); m0.plot(x,y,'r');
-
-m0.update_model(x,y);  m0.plot(x,y,'g')
-plt.show()
+    def clone(self):
+        raise NotImplementedError
 
 
 
-pdb.set_trace()
+def test_ploy_fit():
+    LR = 0.02
+    sw0 = SineWaveTask()
+    sw0.plot()
+    m0 = PolyFitModel(3)
+
+    x = list(sw0.train_x)
+    y = list(sw0.train_y)
+
+    print("%d |  %s  |  loss: %.3f" % (0, m0, m0.loss(x, y)))
+    print(m0.grad_loss(x, y))
+    # print(m0); m0.plot(x,y,'yellow'); plt.show()
+
+    m0.plot(x,y,'g')
+    last_loss = 0
+    for i in range(10):
+        m0.update_model(x,y, LR); m0.plot(x,y,'m');
+        cur_loss = m0.loss(x, y)
+        if i % 100 ==0 : print("%d |  %s  |  loss: %.3f" % (i, m0, cur_loss))
+        if abs((cur_loss - last_loss)/1) < 0.00001:
+            break
+        last_loss = cur_loss
+    m0.update_model(x,y);  m0.plot(x,y,'r')
+    axes = plt.gca(); axes.set_ylim([-5,5])
+
+    plt.show()
+
+# pdb.set_trace()
 
 
 
