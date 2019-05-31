@@ -1,5 +1,6 @@
 import wrapper
 from model import DQN, DuelingDQN
+from model_noisy import NoisyDQN
 from agent import ExperienceBuffer, Agent, calc_loss
 
 import argparse
@@ -32,8 +33,9 @@ if __name__ == '__main__':
     parser.add_argument("--cuda", default=False, action="store_true", help="Enables CUDA")
     parser.add_argument("--env",  default=ENV_NAME, help="Name of the gym env.")
     parser.add_argument("--reward", default=MEAN_REWARD_CUTOFF, type=float, help="When to stop training")
-    parser.add_argument("--double", default=True, help="DDQN")
+    parser.add_argument("--double", default=False, action="store_true", help="DDQN")
     parser.add_argument("--duel",   default=False, action="store_true", help="DuelingDQN")
+    parser.add_argument("--noisy",   default=False, action="store_true", help="NoisyDQN")
     args = parser.parse_args()
     device = torch.device("cuda" if args.cuda else "cpu")
     print("WE ARE RUNNING ON [ %s ]" % device)
@@ -43,6 +45,9 @@ if __name__ == '__main__':
     if args.duel:
         net = DuelingDQN(env.observation_space.shape, env.action_space.n).to(device)
         tgt_net = DuelingDQN(env.observation_space.shape, env.action_space.n).to(device)
+    elif args.noisy:
+        net = NoisyDQN(env.observation_space.shape, env.action_space.n).to(device)
+        tgt_net = NoisyDQN(env.observation_space.shape, env.action_space.n).to(device)
     else:
         net = DQN(env.observation_space.shape, env.action_space.n).to(device)
         tgt_net = DQN(env.observation_space.shape, env.action_space.n).to(device)
