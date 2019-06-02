@@ -2,6 +2,7 @@ import wrapper
 from model import DQN, DuelingDQN
 from model_noisy import NoisyDQN
 from agent import ExperienceBuffer, Agent, calc_loss
+from priority_buffer import PriorityReplayBuffer, calc_loss_weighted
 
 import argparse
 import time
@@ -36,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument("--double", default=False, action="store_true", help="DDQN")
     parser.add_argument("--duel",   default=False, action="store_true", help="DuelingDQN")
     parser.add_argument("--noisy",   default=False, action="store_true", help="NoisyDQN")
+    parser.add_argument("--priority", default=False, action="store_true", help="PriorityReplayBuffer")
     args = parser.parse_args()
     device = torch.device("cuda" if args.cuda else "cpu")
     print("WE ARE RUNNING ON [ %s ]" % device)
@@ -54,6 +56,8 @@ if __name__ == '__main__':
 
     print(net)
     buffer = ExperienceBuffer(REPLAY_SIZE)
+    if args.priority:
+        buffer = PriorityReplayBuffer(REPLAY_SIZE)
     #import pdb; pdb.set_trace()
     agent = Agent(env, buffer)
     epsilon = EPSILON_START
@@ -102,7 +106,12 @@ if __name__ == '__main__':
             tgt_net.load_state_dict(net.state_dict())
 
         opt.zero_grad()
-        batch = buffer.sample(BATCH_SIZE)
-        loss_t = calc_loss(batch, net, tgt_net, device, GAMMA, args.double)
+        if args.priority:
+            batch, batch_idx, batch_weights = buffer.sample(BATCH_SIZE)
+            loss_t, sample_priorities_v = calc_loss_weighted(batch, batch_weights, net, tgt_net, GAMMA, device)
+            buffer.update_priorities(batch_idx, sample_priorities_v.data.cpu().numpy())
+        else:
+            batch = buffer.sample(BATCH_SIZE)
+            loss_t = calc_loss(batch, net, tgt_net, device, GAMMA, args.double)
         loss_t.backward()
         opt.step()

@@ -183,8 +183,11 @@ if __name__ == '__main__':
 
         # train the network | CRITIC
         opt_critic.zero_grad()
-        loss_c_v = nn.MSELoss()(r_v, v_v)
-        loss_c_v.backward(retain_graph=True)
+        #r_v.requires_grad = False
+        #v_v.requires_grad = False
+        #pdb.set_trace()
+        loss_c_v = nn.MSELoss()(v_v.detach().squeeze(-1), r_v)
+        loss_c_v.backward()
         opt_critic.step()
 
 
