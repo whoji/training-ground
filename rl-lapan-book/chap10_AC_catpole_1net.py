@@ -15,7 +15,6 @@ from tensorboardX import SummaryWriter
 ENV_NAME = "CartPole-v0"
 GAMMA = 0.99
 LEARNING_RATE = 0.001 #0.0005
-# EPISODE_TO_TRAIN = 4
 HIDDEN_SIZE = 128    # width of the NN
 STOP_CRITERIA = 195
 ENTROPY_BETA = 0.01
@@ -38,15 +37,15 @@ class A2C(nn.Module):
         )
 
         self.policy = nn.Sequential(
-            nn.Linear(hidden_size, 512),
+            nn.Linear(hidden_size, 32),
             nn.ReLU(),
-            nn.Linear(512, n_action)
+            nn.Linear(32, n_action)
         )
 
         self.value = nn.Sequential(
-            nn.Linear(hidden_size, 512),
+            nn.Linear(hidden_size, 32),
             nn.ReLU(),
-            nn.Linear(512,1)
+            nn.Linear(32,1)
         )
 
     def forward(self, x):
@@ -72,6 +71,30 @@ def process_episode(episode_steps, steps = REWARD_STEPS):
     # import pdb; pdb.set_trace()
     return (s, a, q)
 
+# def process_episode(episode_steps, net, steps = REWARD_STEPS):
+#     s = [e.s for e in episode_steps]
+#     a = [e.a for e in episode_steps]
+#     r = [e.r for e in episode_steps]
+#     n = len(episode_steps)
+#     q = []
+#     for i in range(n-steps):
+#         # import pdb; pdb.set_trace()
+#         r_roll = 0.0
+#         for j in range(steps):
+#             assert i+j < n
+#             r_roll += r[i+j] * GAMMA**j
+#         S_N_steps_later = torch.FloatTensor(s[i+steps])
+#         V_N_steps_later = net(S_N_steps_later)[1]
+#         # import pdb; pdb.set_trace()
+#         V_N_steps_later = V_N_steps_later.data.numpy()[0]
+#         r_roll += GAMMA ** steps * V_N_steps_later
+#         q.append(r_roll)
+#     assert len(q) == len(r) - steps, "%d != %d" % (len(q) , len(r))
+#     # import pdb; pdb.set_trace()
+#     s = s[:-steps]
+#     a = a[:-steps]
+#     assert len(s) == len(a) == len(q)
+#     return (s, a, q)
 
 def iterate_sample(env, steps, net):
     episode_steps = []
@@ -176,26 +199,25 @@ if __name__ == '__main__':
 
         prob_v = F.softmax(policy_out_v, dim=1)
         entropy_v = - (prob_v * log_prob_v).sum(dim=1).mean()
-        loss_entropy_v = - ENTROPY_BETA * entropy_v
+        loss_entropy_v =  - ENTROPY_BETA * entropy_v
+        loss_policy_v = loss_policy_v + loss_entropy_v
 
         loss_policy_v.backward(retain_graph=True)
         grads = np.concatenate(
             [p.grad.data.numpy().flatten() for p in net.parameters() if p.grad is not None])
 
-        loss_v = loss_value_v + loss_entropy_v
-        loss_v.backward()
-        loss_v = loss_value_v + loss_entropy_v + loss_policy_v # just for stats tracking purpose
+        loss_value_v = loss_value_v + loss_entropy_v
+        loss_value_v.backward()
 
-        # nn_utils.clip_grad_norm_(net.parameters(), CLIP_GRAD)
+        torch.nn.utils.clip_grad_norm_(net.parameters(), CLIP_GRAD)
         opt.step()
-
+        loss_v = loss_value_v + loss_entropy_v + loss_policy_v # just for stats tracking purpose
 
         # clear the batch
         batch_s, batch_a, batch_r = [], [], []
 
         # writer / stats recording
         writer.add_scalar("entropy", entropy_v.item(), i)
-        writer.add_scalar("batch_scales", np.mean(batch_r), i)
         writer.add_scalar("loss_entropy", loss_entropy_v.item(), i)
         writer.add_scalar("loss_policy", loss_policy_v.item(), i)
         writer.add_scalar("loss_value", loss_value_v.item(), i)
