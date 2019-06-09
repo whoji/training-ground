@@ -1,89 +1,94 @@
+# note: cannot run the cuda version of this on a Windows OS
+# https://pytorch.org/docs/stable/notes/windows.html#cuda-ipc-operations
+
+import numpy as np
+import argparse
+import ptan
+import gym
+import collections
+from model import AtariA2C, unpack_batch
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from model import AtariA2C
-import argparse
+import torch.multiprocessing as mp
 from tensorboardX import SummaryWriter
-import ptan
-import gym
 
 GAMMA = 0.99
 LEARNING_RATE = 0.001
 ENTROPY_BETA = 0.01
 BATCH_SIZE = 128
-NUM_ENVS = 50
+
 REWARD_STEPS = 4
 CLIP_GRAD = 0.1
-REWARD_CUTOFF = 19.5
 
-def unpack_batch(batch, net, device = 'cpu'):
-    s = []
-    a = []
-    r = []
-    not_done_idx = []
-    last_s = []
+ENV_NAME = "PongNoFrameskip-v4"
+NAME = 'pong'
+REWARD_CUTOFF = 18
+PROC_COUNT = 4      # set to equal number of cpu cores
+NUM_ENVS = 10       # each proc do this number of env. so 10 x 4 = 40
 
-    for i, exp in enumerate(batch):
-        s.append(np.array(exp.state, copy= False))
-        a.append(exp.action)
-        r.append(exp.reward)
-        if exp.last_state is not None:
-            not_done_idx.append(i)
-            last_s.append(np.array(exp.last_state, copy=False))
+TotalReward = collections.namedtuple('TotalReward', field_names='reward')
 
-    s_v = torch.FloatTensor(s).to(device)
-    a_t = torch.LongTensor(a).to(device)
-    r_np = np.array(r, dtype = np.float32)
+# make_env = lambda: ptan.common.wrappers.wrap_dqn(gym.make("PongNoFrameskip-v4"))
+def make_env():
+    return ptan.common.wrappers.wrap_dqn(gym.make(ENV_NAME))
 
-    if not_done_idx:
-        last_s_v = torch.FloatTensor(last_s).to(device)
-        last_V_v = net(last_s_v)[1]
-        last_V_np = last_V_v.data.cpu().numpy()[:,0]
-        r_np[not_done_idx] += GAMMA ** REWARD_STEPS * last_V_np
+# to be executed in the children proc
+def data_func(net, device, train_queue):
+    envs = [make_env() for _ in range(NUM_ENVS)]
+    agent = ptan.agent.PolicyAgent(lambda x: net(x)[0], device=device, apply_softmax=True)
+    exp_source = ptan.experience.ExperienceSourceFirstLast(envs,
+        agent, gamma=GAMMA, steps_count=REWARD_STEPS)
 
-    ref_V_v = torch.FloatTensor(r_np).to(device)
-    return s_v, a_t, ref_V_v
+    for exp in exp_source:
+        new_rewards = exp_source.pop_total_rewards()
+        if new_rewards:
+            train_queue.put(TotalReward(reward=np.mean(new_rewards)))
+        train_queue.put(exp)
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn')
     parser = argparse.ArgumentParser()
     parser.add_argument("--cuda", default=False, action="store_true", help="enable cuda")
     parser.add_argument("-n", "--name", required=True, help="Name of the run")
     args = parser.parse_args()
-    device = torch.device("cuda" if args.cuda else "cpu")
+    # device = torch.device("cuda" if args.cuda else "cpu")
+    device = "cuda" if args.cuda else "cpu"
+    writer = SummaryWriter(comment="-pong-a3c_"+ NAME + "_" + args.name)
 
-    make_env = lambda: ptan.common.wrappers.wrap_dqn(gym.make("PongNoFrameskip-v4"))
-    envs = [make_env() for _ in range(NUM_ENVS)]
-    writer = SummaryWriter(comment="-pong-a2c_"+args.name)
-
-    net = AtariA2C(envs[0].observation_space.shape, envs[0].action_space.n).to(device)
+    temp_env = make_env()
+    net = AtariA2C(temp_env.observation_space.shape, temp_env.action_space.n).to(device)
+    net.share_memory() # cuda tensors are shared by default. but for cpu, need to do this
     print(net)
-
-    agent = ptan.agent.PolicyAgent(lambda x: net(x)[0], apply_softmax=True, device=device)
-    exp_source = ptan.experience.ExperienceSourceFirstLast(envs, agent,
-        gamma=GAMMA, steps_count=REWARD_STEPS)
-
     opt = torch.optim.Adam(net.parameters(), lr=LEARNING_RATE, eps=1e-3)
 
+    train_queue = mp.Queue(maxsize=PROC_COUNT)
+    data_proc_list = []
+    for _ in range(PROC_COUNT):
+        data_proc = mp.Process(target=data_func, args = (net, device, train_queue))
+        data_proc.start()
+        data_proc_list.append(data_proc)
+
     batch = []
-    uber_rewards = []
-    uber_100 = -1000
+    i = 0
+    uber_rewards = [-22]
 
-    for i, exp in enumerate(exp_source):
-        batch.append(exp)
-
-        new_rewards = exp_source.pop_total_rewards()
-        if new_rewards:
-            uber_rewards.append(new_rewards[0])
-            uber_100 = np.mean(uber_rewards[-100:])
-            if  uber_100 > REWARD_CUTOFF:
-                print("GGWP!!!")
+    while True:
+        train_entry = train_queue.get()
+        if isinstance(train_entry, TotalReward):
+            uber_rewards.append(train_entry.reward)
+            if  np.mean(uber_rewards[-100:]) > REWARD_CUTOFF:
+                print("GGWP!!! finished in %d steps" % i)
                 break
+            continue
 
+        i += 1
+        batch.append(train_entry)
         if len(batch) < BATCH_SIZE:
             continue
 
-        print("Training at %d-th step!! (last 100 reward: %.2f)" % (i, uber_100))
+        print("Training at %d-th step!! (last 100 reward: %.2f)" % (i, np.mean(uber_rewards[-100:])))
 
         s_v, a_t, vals_ref_v = unpack_batch(batch, net, device=device)
         batch.clear()
@@ -126,4 +131,8 @@ if __name__ == '__main__':
         writer.add_scalar("grad_var", np.var(grads), i)
 
     writer.close()
+
+    for p in data_proc_list:
+        p.terminate()
+        p.join()
 
