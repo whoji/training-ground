@@ -93,6 +93,31 @@ def train_step(net, batch_noise, batch_reward, writer, step_idx):
         m_updates.append(torch.norm(update))
     writer.add_scalar("update_l2", np.mean(m_updates), step_idx)
 
+def watch_with_render(env, net, episodes, horizon):
+    # import pdb; pdb.set_trace()
+    for ep in range(episodes):
+        s = env.reset()
+        frames = 0
+        for _ in range(horizon):
+            env.render()
+            #a = env.action_space.sample()
+            s_v = torch.FloatTensor([s])
+            # a_prob_v = nn.Softmax(dim=1)(net(s_v))
+            # a_prob = a_prob_v.data.numpy()[0]
+            # a = np.random.choice(len(a_prob), p = a_prob)
+            a_prob = net(s_v)
+            a = a_prob.max(dim=1)[1]
+            a = a.data.numpy()[0] 
+            s_new, r, terminal, _ = env.step(a)
+            if terminal:
+                print("finished %d/%d episode !! Frames=%d" % (ep, episodes, frames))
+                frames = 0
+                break
+            else:
+                frames += 1
+                s = s_new
+    env.close()
+
 
 if __name__ == '__main__':
     writer = SummaryWriter(comment="-cartpole-es")
@@ -138,6 +163,8 @@ if __name__ == '__main__':
         writer.add_scalar("speed", speed, step_idx)
         print("%d: reward=%.2f, speed=%.2f f/s" % (step_idx, m_reward, speed))
 
+    # render some runs of episodes
+    watch_with_render(env, net, episodes=20, horizon=1000)
 
 
 

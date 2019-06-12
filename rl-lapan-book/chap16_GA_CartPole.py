@@ -58,6 +58,31 @@ def get_mutated(net):
         p.data += NOISE_STD * noise_t
     return new_net
 
+def watch_with_render(env, net, episodes, horizon):
+    # import pdb; pdb.set_trace()
+    for ep in range(episodes):
+        s = env.reset()
+        frames = 0
+        for _ in range(horizon):
+            env.render()
+            #a = env.action_space.sample()
+            s_v = torch.FloatTensor([s])
+            # a_prob_v = nn.Softmax(dim=1)(net(s_v))
+            # a_prob = a_prob_v.data.numpy()[0]
+            # a = np.random.choice(len(a_prob), p = a_prob)
+            a_prob = net(s_v)
+            a = a_prob.max(dim=1)[1]
+            a = a.data.numpy()[0] 
+            s_new, r, terminal, _ = env.step(a)
+            if terminal:
+                print("finished %d/%d episode !! Frames=%d" % (ep, episodes, frames))
+                frames = 0
+                break
+            else:
+                frames += 1
+                s = s_new
+    env.close()
+
 
 if __name__ == '__main__':
     writer = SummaryWriter(comment="-cartpole-GA")
@@ -93,6 +118,8 @@ if __name__ == '__main__':
             population.append((net, fitness))
         gen_idx += 1
 
+    # render some runs of episodes
+    watch_with_render(env, net=population[1][0], episodes=20, horizon=1000)
 
 
 
