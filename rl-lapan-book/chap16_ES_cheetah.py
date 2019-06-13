@@ -201,6 +201,12 @@ if __name__ == '__main__':
     env = gym.make("RoboschoolHalfCheetah-v1")
     net = Net(env.observation_space.shape[0], env.action_space.shape[0])
     print(net)
+
+    try:
+        net.load_state_dict(torch.load('./cheetah_es_model.pth'))
+        print("OLD MODEL LOADED")
+    except:
+        print("no old model found, using new init model.")
   
     # watch_with_render(env, net, episodes=20, horizon=1000)
 
@@ -271,6 +277,9 @@ if __name__ == '__main__':
         p_queue.put(None)
         worker.join()
 
+    # save the model for later use
+    # torch.save(net.state_dict(),"./cheetah_model.pth")
+    net.save_state_dict('./cheetah_es_model.pth')
 
     # render some runs of episodes
     watch_with_render(env, net, episodes=100, horizon=1000)
