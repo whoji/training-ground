@@ -173,7 +173,6 @@ def watch_with_render(env, net, episodes, horizon):
             a_prob = net(s_v)
             #a = a_prob.max(dim=1)[1]
             a = a_prob.data.cpu().numpy()[0]
-            print(a)
             #a = a_prob.data.max(dim=1)[1].cpu().numpy()[0]
 
             s_new, r, terminal, _ = env.step(a)
@@ -282,8 +281,9 @@ if __name__ == '__main__':
     net.save_state_dict('./cheetah_es_model.pth')
 
     # render some runs of episodes
-    watch_with_render(env, net, episodes=100, horizon=1000)
+    watch_with_render(env, net, episodes=2, horizon=1000)
 
+    import pdb; pdb.set_trace()
 
 
 
