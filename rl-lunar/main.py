@@ -1,4 +1,5 @@
 # https://www.youtube.com/watch?v=UlJzzLYgYoE
+# remember to install pybox2d: pip install box2d-py
 
 import torch
 import torch.nn as nn
@@ -11,18 +12,18 @@ import gym
 class Net(nn.Module):
     def __init__(self, lr, input_size, hid_1, hid_2, n_actions):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(input_size, hid_1)
+        self.fc1 = nn.Linear(*input_size, hid_1)
         self.fc2 = nn.Linear(hid_1, hid_2)
         self.fc3 = nn.Linear(hid_2, n_actions)
         self.opt = opt.Adam(self.parameters(), lr=lr)
         self.loss = nn.MSELoss()
         # self.device = T.device('cuda:0' if torch.cuda.is_available() )
-        self.device = T.device('cuda:0')
+        self.device = torch.device('cuda:0')
         self.to(self.device)
 
     def forward(self, s):
         s_v =torch.Tensor(s).to(self.device)
-        x = F.relu(self.fc1(s))
+        x = F.relu(self.fc1(s_v))
         x = F.relu(self.fc2(x))
         actions = self.fc3(x)
         return actions
@@ -47,16 +48,16 @@ class Agent():
         self.state_memory = np.zeros((self.max_mem_size, *input_size))
         self.new_state_memory = np.zeros((self.max_mem_size, *input_size))
         self.action_memory = np.zeros((self.max_mem_size, self.n_actions),
-            dtype=np.uinit8)
+            dtype=np.uint8)
         self.reward_memory = np.zeros(self.max_mem_size)
-        self.terminal_memory = np.zeros(self.max_mem_size, dtype=np.uinit8)
+        self.terminal_memory = np.zeros(self.max_mem_size, dtype=np.uint8)
 
     def store_transition(self, s, a, r, s_new, terminal):
         idx = self.mem_cntr % self.max_mem_size
         self.state_memory[idx] = s
         actions = np.zeros(self.n_actions)
         actions[a]  = 1.0
-        self.action_memory[idx] = action
+        self.action_memory[idx] = actions
         self.reward_memory[idx] = r
         self.terminal_memory[idx]   = terminal
         self.new_state_memory[idx] = s_new
@@ -64,7 +65,7 @@ class Agent():
 
     def choose_action(self, s):
         rand = np.random.random()
-        if random < self.epsilon:
+        if rand < self.epsilon:
             a = np.random.choice(self.action_space)
         else:
             actions = self.q_eval.forward(s)
@@ -79,11 +80,17 @@ class Agent():
             batch_idx = np.random.choice(max_mem, self.batch_size)
             s_batch = self.state_memory[batch_idx]
             a_batch = self.action_memory[batch_idx]
-            a_values = np.array(self.action_space, dtype=np.uinit8)
+            a_values = np.array(self.action_space, dtype=np.uint8)
             a_idx =np.dot(a_batch, a_values)
+
+            # print(a_batch)
+            # print(a_values)
+            # print(a_idx)
+            # print("-------------------")
+
             r_batch = self.reward_memory[batch_idx]
             terminal_batch = self.terminal_memory[batch_idx]
-            s_new_batch = self.self.new_state_memory[batch_idx]
+            s_new_batch = self.new_state_memory[batch_idx]
 
             r_batch = torch.Tensor(r_batch).to(self.q_eval.device)
             terminal_batch = torch.Tensor(terminal_batch).to(self.q_eval.device)
@@ -92,15 +99,33 @@ class Agent():
             q_tgt = self.q_eval.forward(s_batch).to(self.q_eval.device)
             q_next = self.q_eval.forward(s_new_batch).to(self.q_eval.device)
 
-            batch_idx = np.arrange(self.batch_size, dtype=np.init32)
+            batch_idx = np.arange(self.batch_size, dtype=np.int32)
 
-            q_tgt[batch_idx, a_idx] = \
-                r_batch + self.gamma* torch.max(q_next, dim=1)[0]*terminal_batch
+
+            # print(q_tgt.shape)
+            # print(batch_idx.shape)
+            # print(batch_idx)
+            # print(a_idx.shape)
+
+            # print(q_tgt[:,1])
+            # print(q_tgt[:,(1,2)])
+
+            # import pdb; pdb.set_trace()
+
+
+            #print(q_tgt[a_batch])
+
+            #import pdb; pdb.set_trace()
+
+
+            #q_tgt[batch_idx, a_idx] = \
+            q_tgt[a_batch] = \
+                r_batch + self.gamma * torch.max(q_next, dim=1)[0]*terminal_batch
 
             self.epsilon = self.epsilon*self.eps_dec if self.epsilon \
                 > self.eps_end else self.eps_end
 
-            loss = self.q_eval.loss(q_target, q_eval).to(self.q_eval.device)
+            loss = self.q_eval.loss(q_tgt, q_eval).to(self.q_eval.device)
             loss.backward()
             self.q_eval.opt.step()
 
