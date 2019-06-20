@@ -9,9 +9,10 @@ import numpy as np
 
 import gym
 
-MAX_TRAIN_EP = 1000
-GOOD_CUTOFF = 10
+MAX_TRAIN_EP = 2000
+GOOD_CUTOFF = 20
 MODEL_SAVE_FILE = './dqn_lunar.pth'
+WATCH_ONLY = False
 
 class Net(nn.Module):
     def __init__(self, lr, input_size, hid_1, hid_2, n_actions):
@@ -125,7 +126,7 @@ class Agent():
             frames = 0
             for _ in range(horizon):
                 env.render()
-                a = agent.choose_action(s)
+                a = self.choose_action(s)
                 s_new, r, terminal, _ = env.step(a)
                 if terminal:
                     print("finished %d/%d episode !! Frames=%d" % (ep, episodes, frames))
@@ -145,12 +146,19 @@ if __name__ == '__main__':
     eps_history = []
     score = 0
 
+    if WATCH_ONLY:
+        saved_model_dict= torch.load(MODEL_SAVE_FILE)
+        agent.q_eval.load_state_dict(saved_model_dict)
+        agent.epsilon = 0.0
+        print("model loaded from %s" % MODEL_SAVE_FILE)
+        agent.watch_with_render(env, episodes=1000, horizon=1000)
+        exit()
+
     # first lets watch some test play
     agent.watch_with_render(env, episodes=5, horizon=1000)
-
     for i in range(MAX_TRAIN_EP):
         if i % 10 ==0 and i > 0:
-            avg_score = np.mean(scores[-10:])
+            avg_score = np.mean(scores[-100:])
             print('%i %.3f %.3f %.3f' % (i, agent.epsilon, score, avg_score))
             if avg_score >= GOOD_CUTOFF:
                 print("GGWP !!! TRAINING FINISHED !!")
