@@ -9,6 +9,10 @@ import numpy as np
 
 import gym
 
+MAX_TRAIN_EP = 1000
+GOOD_CUTOFF = 10
+MODEL_SAVE_FILE = './dqn_lunar.pth'
+
 class Net(nn.Module):
     def __init__(self, lr, input_size, hid_1, hid_2, n_actions):
         super(Net, self).__init__()
@@ -82,12 +86,6 @@ class Agent():
             a_batch = self.action_memory[batch_idx]
             a_values = np.array(self.action_space, dtype=np.uint8)
             a_idx =np.dot(a_batch, a_values)
-
-            # print(a_batch)
-            # print(a_values)
-            # print(a_idx)
-            # print("-------------------")
-
             r_batch = self.reward_memory[batch_idx]
             terminal_batch = self.terminal_memory[batch_idx]
             s_new_batch = self.new_state_memory[batch_idx]
@@ -106,17 +104,8 @@ class Agent():
             # print(batch_idx.shape)
             # print(batch_idx)
             # print(a_idx.shape)
-
-            # print(q_tgt[:,1])
-            # print(q_tgt[:,(1,2)])
-
+            # print(q_tgt[a_batch])
             # import pdb; pdb.set_trace()
-
-
-            #print(q_tgt[a_batch])
-
-            #import pdb; pdb.set_trace()
-
 
             #q_tgt[batch_idx, a_idx] = \
             q_tgt[a_batch] = \
@@ -129,19 +118,43 @@ class Agent():
             loss.backward()
             self.q_eval.opt.step()
 
+    def watch_with_render(self, env, episodes, horizon):
+        # import pdb; pdb.set_trace()
+        for ep in range(episodes):
+            s = env.reset()
+            frames = 0
+            for _ in range(horizon):
+                env.render()
+                a = agent.choose_action(s)
+                s_new, r, terminal, _ = env.step(a)
+                if terminal:
+                    print("finished %d/%d episode !! Frames=%d" % (ep, episodes, frames))
+                    frames = 0
+                    break
+                else:
+                    frames += 1
+                    s = s_new
+        env.close()
+
+
 if __name__ == '__main__':
     env = gym.make('LunarLander-v2')
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=64, n_actions=4,
         input_size = [8], lr=0.003)
     scores = []
     eps_history = []
-    n_games = 500
     score = 0
 
-    for i in range(n_games):
+    # first lets watch some test play
+    agent.watch_with_render(env, episodes=5, horizon=1000)
+
+    for i in range(MAX_TRAIN_EP):
         if i % 10 ==0 and i > 0:
             avg_score = np.mean(scores[-10:])
             print('%i %.3f %.3f %.3f' % (i, agent.epsilon, score, avg_score))
+            if avg_score >= GOOD_CUTOFF:
+                print("GGWP !!! TRAINING FINISHED !!")
+                break
 
         score = 0
         eps_history.append(agent.epsilon)
@@ -156,6 +169,8 @@ if __name__ == '__main__':
             s = s_new
         scores.append(score)
 
-    x = [i+1 for i in range(n_games)]
+    # render some runs of episodes
+    agent.watch_with_render(env, episodes=20, horizon=1000)
+    torch.save(agent.q_eval.state_dict(), MODEL_SAVE_FILE)
 
 
