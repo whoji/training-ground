@@ -100,3 +100,15 @@ output = net(input)
 loss = nn.MSELoss()(output, target)
 loss.backward()
 opt.step()
+
+
+# Question left behind: what is tensor.view do
+# x = x.view(-1, self.num_flat_features(x)) # ??
+# target = target.view(1,-1)
+# https://stackoverflow.com/questions/42479902/how-does-the-view-method-work-in-pytorch
+
+# The view function is meant to reshape the tensor.
+# a = torch.range(1, 16)
+# a = a.view(4, 4)
+
+# Drawing a similarity between numpy and pytorch, view is similar to numpy's reshape function.
