@@ -4,7 +4,7 @@ import numpy as np
 
 HID_SIZE = 128
 
-class A2CModel(nn.Model):
+class A2CModel(nn.Module):
     """docstring for A2CModel"""
     def __init__(self, obs_size, act_size):
         super(A2CModel, self).__init__()

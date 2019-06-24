@@ -1,7 +1,7 @@
 import gym
 import pybullet_envs
 
-ENV = "MinituarBulletEnv-v0"
+ENV = "MinitaurBulletEnv-v0"
 RENDER = True
 
 if __name__ == '__main__':

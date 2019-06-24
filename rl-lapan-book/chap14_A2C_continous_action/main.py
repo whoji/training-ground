@@ -1,8 +1,14 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as opt
+
 import numpy as np
 from agent import float32_preprocessor, AgentA2C
 from model import A2CModel
+import gym
+import pybullet_envs
+from tensorboardX import SummaryWriter
 
 PIE = 3.1415926
 ENV_NAME = 'MinitaurBulletEnv-v0'
@@ -13,7 +19,7 @@ BATCH_SIZE = 32 # 128
 REWARD_STEPS = 2 #4
 TEST_ITERS = 1000
 #CLIP_GRAD = 0.1
-#REWARD_CUTOFF = 19.5
+STOP_CRITERIA = 2000
 
 def test_net(net, env, episodes=10, device='cpu'):
     all_Ret = []
@@ -27,7 +33,8 @@ def test_net(net, env, episodes=10, device='cpu'):
             mu_v, _ , _ = net(s_v)
             # now take the mean as the action.
             a = mu_v.squeeze(dim=0).data.cpu().numpy()
-            s_new, r, terminal, _ = env.step(action)
+            a = np.clip(a, -1, 1)
+            s_new, r, terminal, _ = env.step(a)
             Ret += r
             steps += 1
             if terminal:
@@ -45,72 +52,29 @@ def calc_logprob(mu_v, var_v, actions_v):
     return part1 + part2
 
 
-def iterate_sample(env, steps, actor_net , critic_net):
-    episode_steps = []
-    s = env.reset()
-    sm = nn.Softmax(dim=1)
-
-    while True:
-        obs_v = torch.FloatTensor([s])
-        nn_output_v = actor_net(obs_v)
-        act_probs_v = sm(nn_output_v)
-        act_probs = act_probs_v.data.numpy()[0]
-        a = np.random.choice(len(act_probs), p=act_probs)
-        s_new, r, terminal, _ = env.step(a)
-        episode_steps.append(EpisodeStep(s=s,a=a,r=r))
-
-        if terminal:
-            S, A, R, V = process_episode(episode_steps)
-            for i in range(len(S)):
-                Ret = len(S) if i == len(S)-1  else None
-                # pdb.set_trace()
-                yield (S[i], A[i], R[i], V[i], Ret)
-            episode_steps = []
-            s_new = env.reset()
-
-        s = s_new
-
-def watch_with_render(env, net, episodes, horizon):
-    # import pdb; pdb.set_trace()
-    for ep in range(episodes):
-        s = env.reset()
-        frames = 0
-        for _ in range(horizon):
-            env.render()
-            #a = env.action_space.sample()
-            s_v = torch.FloatTensor([s])
-            a_prob_v = nn.Softmax(dim=1)(net(s_v))
-            a_prob = a_prob_v.data.numpy()[0]
-            a = np.random.choice(len(a_prob), p = a_prob)
-            s_new, r, terminal, _ = env.step(a)
-            if terminal:
-                print("finished %d/%d episode !! Frames=%d" % (ep, 20, frames))
-                frames = 0
-                break
-            else:
-                frames += 1
-                s = s_new
-    env.close()
-
-
 if __name__ == '__main__':
     env = gym.make(ENV_NAME)
     # env = gym.wrappers.Monitor(env, directory="mon", force=True)
     s_size = env.observation_space.shape[0]
-    a_size = env.action_space.n
+    a_size = env.action_space.shape[0]
 
-    net = A2CModel(s_size, HIDDEN_SIZE, a_size)
+    net = A2CModel(s_size, a_size)
     print(net)
 
-    opt =  optim.Adam(params=net.parameters(), lr=LEARNING_RATE)
-    writer = SummaryWriter(comment="-cartpole-PG-1net-0603")
+    agent = AgentA2C(net)
+
+    # watch the performance before any training
+    # agent.watch_with_render_continous(ENV_NAME, 5, 10000)
+
+    opt =  opt.Adam(params=net.parameters(), lr=LEARNING_RATE)
+    writer = SummaryWriter(comment="-MinitaurBulletEnv-A2C-0625")
 
     batch_size = 0
     batch_s, batch_a, batch_r, batch_v = [], [], [], []
     reward_sum = 0.0
     episodes_returns = []
 
-    for i , (s, a, r, Ret) in enumerate(iterate_sample(env, REWARD_STEPS, net)):
+    for i , (s, a, r, Ret) in enumerate(agent.iterate_sample(env, REWARD_STEPS)):
         # import pdb; pdb.set_trace()
         reward_sum += r
         batch_s.append(s)
@@ -127,23 +91,23 @@ if __name__ == '__main__':
             print("GG solved in %s step | %d episodes !!" % (i, len(episodes_returns)))
             break
 
-        if len(batch_s) < BATH_SIZE:
+        if len(batch_s) < BATCH_SIZE:
             continue
 
         s_v = torch.FloatTensor(batch_s)
-        a_t = torch.LongTensor(batch_a)
+        a_t = torch.FloatTensor(batch_a)
         r_v = torch.FloatTensor(batch_r)
 
         # train the network | ACTOR
         opt.zero_grad()
         mu_v, var_v, value_v = net(s_v)
 
-        loss_value_v = F.mse_loss(value_v, r_v)
+        loss_value_v = F.mse_loss(value_v.squeeze(-1), r_v)
 
         # A(s,a) = Q(s,a) - V(s)
-        adv_v = r_v.unsqeeze(dim=-1) - value_out_v.detach()
+        adv_v = r_v.unsqueeze(dim=-1) - value_v.detach()
 
-        log_prob_v = adv_v * calc_logprob(mu_v, var_v, actions_v)
+        log_prob_v = adv_v * calc_logprob(mu_v, var_v, a_t)
         loss_policy_v = - log_prob_v.mean()
 
         entropy_v = -  ((torch.log(2*PIE*var_v)+1)/2)  .mean()
