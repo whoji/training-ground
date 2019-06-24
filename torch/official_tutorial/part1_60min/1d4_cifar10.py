@@ -11,7 +11,6 @@ import numpy as np
 import torch.optim as opt
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = "cpu"
 print("we are doing this on: "+str(device) + " !!!")
 
 transform = transforms.Compose(
@@ -69,21 +68,18 @@ class Net(nn.Module):
         return x
 
 net = Net()
-net = net.to(device)
+net.to(device)
 LOSS = nn.CrossEntropyLoss()
 opt = opt.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 
 ## train the network
 
-# net.to(device)
 
 for epoch in range(2):
     running_loss =0.0
     for i, data in enumerate(trainloader, 0):
-        #inputs, labels = data
-        #inputs = inputs.to(device)
-        #labels = labels.to(device)
+        # inputs, labels = data
         inputs, labels = data[0].to(device), data[1].to(device)
         opt.zero_grad()
         outputs = net(inputs)
@@ -103,13 +99,11 @@ print("GGWP")
 
 print("NOW testing 1 sample")
 dataiter = iter(testloader)
-images_, labels = dataiter.next()
-images = images_.to(device)
-labels = labels.to(device)
-
+data = dataiter.next()
+images, labels = data[0].to(device), data[1].to(device)
 
 # print images
-imshow(torchvision.utils.make_grid(images_))
+imshow(torchvision.utils.make_grid(images.cpu()))
 print('GroundTruth: ', ' '.join('%5s' % classes[labels[j]] for j in range(4)))
 outputs = net(images)
 _, predicted = torch.max(outputs, 1)
@@ -124,7 +118,7 @@ total = 0
 with torch.no_grad():
     for data in testloader:
         # images, labels = data
-        iamges, labels = data[0].to(device), data[1].to(device)
+        images, labels = data[0].to(device), data[1].to(device)
         outputs = net(images)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
@@ -139,7 +133,7 @@ class_total = list(0. for i in range(10))
 with torch.no_grad():
     for data in testloader:
         # images, labels = data
-        iamges, labels = data[0].to(device), data[1].to(device)
+        images, labels = data[0].to(device), data[1].to(device)
         outputs = net(images)
         _, predicted = torch.max(outputs, 1)
         c = (predicted == labels).squeeze()
