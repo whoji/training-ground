@@ -52,6 +52,7 @@ def calc_logprob(mu_v, var_v, actions_v):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--model", help="Model file to load")
     parser.add_argument("--cuda", default=False, action='store_true', help='Enable CUDA')
     parser.add_argument("-n", "--name", required=True, help="Name of the run")
     args = parser.parse_args()
@@ -65,6 +66,10 @@ if __name__ == "__main__":
 
     net = model.ModelA2C(env.observation_space.shape[0], env.action_space.shape[0]).to(device)
     print(net)
+
+    if args.model:
+        net.load_state_dict(torch.load(args.model))
+        print("LOADED model : %s" % args.model)
 
     writer = SummaryWriter(comment="-a2c_" + args.name)
     agent = model.AgentA2C(net, device=device)
