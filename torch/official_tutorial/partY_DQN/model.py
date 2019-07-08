@@ -66,3 +66,7 @@ class DQN(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = x.view(x.size(0), -1) # flatten
         return self.fc(x)
+
+if __name__ == '__main__':
+    net = DQN(64, 64, 2)
+    print(net)

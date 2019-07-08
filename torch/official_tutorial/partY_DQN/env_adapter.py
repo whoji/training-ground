@@ -1,15 +1,21 @@
+import torch
+import torchvision.transforms as T
+from PIL import Image
+import gym
+import matplotlib.pyplot as plt
+import numpy as np
 
 resize = T.Compose([T.ToPILImage(),
                     T.Resize(40, interpolation=Image.CUBIC),
                     T.ToTensor()])
 
 
-def get_cart_location(screen_width):
+def get_cart_location(env, screen_width):
     world_width = env.x_threshold * 2
     scale = screen_width / world_width
     return int(env.state[0] * scale + screen_width / 2.0)  # MIDDLE OF CART
 
-def get_screen():
+def get_screen(env, device):
     # Returned screen requested by gym is 400x600x3, but is sometimes larger
     # such as 800x1200x3. Transpose it into torch order (CHW).
     screen = env.render(mode='rgb_array').transpose((2, 0, 1))
@@ -17,7 +23,7 @@ def get_screen():
     _, screen_height, screen_width = screen.shape
     screen = screen[:, int(screen_height*0.4):int(screen_height * 0.8)]
     view_width = int(screen_width * 0.6)
-    cart_location = get_cart_location(screen_width)
+    cart_location = get_cart_location(env, screen_width)
     if cart_location < view_width // 2:
         slice_range = slice(view_width)
     elif cart_location > (screen_width - view_width // 2):
@@ -44,7 +50,7 @@ if __name__ == '__main__':
 
     env.reset()
     plt.figure()
-    plt.imshow(get_screen().cpu().squeeze(0).permute(1, 2, 0).numpy(),
+    plt.imshow(get_screen(env, device).cpu().squeeze(0).permute(1, 2, 0).numpy(),
                interpolation='none')
     plt.title('Example extracted screen')
     plt.show()
