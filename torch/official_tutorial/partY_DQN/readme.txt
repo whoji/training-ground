@@ -3,12 +3,14 @@ https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 
 Some difference to the above tutorial:
 * Put the various components into modules to avoid a large script
-* [TODO] better plot and visualization
+* Added a learning rate hyperparameter
+* Better plot and visualization
+* better terminal output
 * [TODO] stack more frames for better training performance
-* [TODO] better terminal output
+* [TODO] save and load model.
 
 More to do:
-* test if runnable on GPU
-* test on multiple platform
-* try to avoid using torchvision
-* better coding (between modules)
+* [DONE] test if runnable on GPU
+* [TODO] test on multiple platform
+* [TODO] try to avoid using torchvision
+* [TODO] better coding (between modules)

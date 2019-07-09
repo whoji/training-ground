@@ -50,14 +50,15 @@ class Agent(object):
         durations_t = torch.tensor(self.episode_durations, dtype=torch.float)
         plt.title('Training...')
         plt.xlabel('Episode')
-        plt.ylabel('Duration')
-        plt.plot(durations_t.numpy())
+        plt.ylabel('Duration (frames)')
+        plt.plot(durations_t.numpy(),label='episode (1)')
         # Take 100 episode averages and plot them too
         if len(durations_t) >= 100:
             means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
             means = torch.cat((torch.zeros(99), means))
-            plt.plot(means.numpy())
+            plt.plot(means.numpy(), label='episode (avg.100)')
 
+        plt.legend(loc='upper left')
         plt.pause(0.001)  # pause a bit so that plots are updated
         if is_ipython:
             display.clear_output(wait=True)

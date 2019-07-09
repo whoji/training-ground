@@ -15,6 +15,8 @@ from env_adapter import get_screen
 from agent import Agent
 
 TARGET_UPDATE = 10
+LR = 0.0001
+CMD_LINE_UPDATE_FREQ = 50
 
 env = gym.make('CartPole-v0').unwrapped
 env.reset()
@@ -46,7 +48,7 @@ target_net = DQN(screen_height, screen_width, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
-optimizer = optim.RMSprop(policy_net.parameters())
+optimizer = optim.RMSprop(policy_net.parameters(), lr=LR)
 memory = ReplayMemory(10000)
 
 agent = Agent(policy_net, target_net, n_actions, optimizer, memory, device)
@@ -56,7 +58,7 @@ agent = Agent(policy_net, target_net, n_actions, optimizer, memory, device)
 ## Main iteration loop
 ##################################
 
-num_episodes = 500
+num_episodes = 5000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
@@ -87,9 +89,16 @@ for i_episode in range(num_episodes):
         agent.optimize_model()
 
         if done:
-            print("episode %d, duration: %d sec" % (i_episode, t+1))
             agent.episode_durations.append(t + 1)
             agent.plot_durations()
+            if i_episode % CMD_LINE_UPDATE_FREQ == 0:
+                print("episode %d, duration: %d frames" % (i_episode, t+1),end="")
+                if i_episode >= CMD_LINE_UPDATE_FREQ:
+                    print(", (avg: %.2f frames)" % np.mean(
+                        agent.episode_durations[-CMD_LINE_UPDATE_FREQ:]) )
+                else:
+                    print("")
+
             break
     # Update the target network, copying all weights and biases in DQN
     if i_episode % TARGET_UPDATE == 0:
