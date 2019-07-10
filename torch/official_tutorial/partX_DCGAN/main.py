@@ -1,26 +1,19 @@
 # https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 
-from __future__ import print_function
-#%matplotlib inline
-import argparse
-import os
 import random
 import torch
 import torch.nn as nn
 import torch.nn.parallel
-import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-# from IPython.display import HTML
+import logging
 
 from model import Generator, Discriminator
 from data import get_dataloader
-
+from viz import visualize_all
 
 dataroot = "data/celeba"    # Root directory for dataset
 workers = 2                 # Number of workers for dataloader
@@ -35,8 +28,11 @@ num_epochs = 5              # Number of training epochs
 lr = 0.0002                 # LR
 beta1 = 0.5                 # beta1 for Adam optimizers
 ngpu = 1                    # Number of GPUs available. Use 0 for CPU mode.
+model_save_path = "./"      # model PATH
 
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+logging.basicConfig(format='%(asctime)s | %(message)s', level=logging.INFO)
 
 ###################
 ## testing
@@ -138,7 +134,7 @@ for epoch in range(num_epochs):
         # Generate fake image batch with G
         fake = netG(noise)
         label.fill_(fake_label)
-        # Classify all fake batch with D
+        # Classify all fake batch with D. Pay attention to the detach() here.
         output = netD(fake.detach()).view(-1)
         # Calculate D's loss on the all-fake batch
         errD_fake = criterion(output, label)
@@ -167,9 +163,10 @@ for epoch in range(num_epochs):
 
         # Output training stats
         if i % 50 == 0:
-            print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
-                  % (epoch, num_epochs, i, len(dataloader),
-                     errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+            info_str = '[%d/%d][%4d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'% (
+                epoch+1, num_epochs, i, len(dataloader),errD.item(), errG.item(), D_x, D_G_z1, D_G_z2)
+            logging.info(info_str)
+            #print(info_str)
 
         # Save Losses for plotting later
         G_losses.append(errG.item())
@@ -182,3 +179,14 @@ for epoch in range(num_epochs):
             img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
         iters += 1
+
+## Visualization part
+visualize_all(G_losses, D_losses, img_list, dataloader, device)
+
+## Save the model
+print("saving Generator and Discriminator...")
+torch.save(netG, model_save_path + "netG.pth")
+torch.save(netD, model_save_path + "netG.pth")
+
+# import pdb; pdb.set_trace()
+
