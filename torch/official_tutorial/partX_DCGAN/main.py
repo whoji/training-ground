@@ -186,7 +186,7 @@ visualize_all(G_losses, D_losses, img_list, dataloader, device)
 ## Save the model
 print("saving Generator and Discriminator...")
 torch.save(netG, model_save_path + "netG.pth")
-torch.save(netD, model_save_path + "netG.pth")
+torch.save(netD, model_save_path + "netD.pth")
 
 # import pdb; pdb.set_trace()
 
