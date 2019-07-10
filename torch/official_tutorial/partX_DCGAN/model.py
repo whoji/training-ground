@@ -51,6 +51,9 @@ class Generator(nn.Module):
     def forward(self, input):
         return self.main(input)
 
+    def initialize_weight(self):
+        self.apply(weights_init)
+
 
 class Discriminator(nn.Module):
     def __init__(self, ngpu):
@@ -79,6 +82,9 @@ class Discriminator(nn.Module):
 
     def forward(self, input):
         return self.main(input)
+
+    def initialize_weight(self):
+        self.apply(weights_init)
 
 if __name__ == '__main__':
     ##################
