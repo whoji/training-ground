@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as opt
+import torch.optim as optim
 import numpy as np
-
+import copy
 import torchvision.models as models
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 '''
 We will add this content loss module directly after the

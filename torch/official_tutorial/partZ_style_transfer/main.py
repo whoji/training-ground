@@ -1,17 +1,12 @@
 from __future__ import print_function
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
 from PIL import Image
 import matplotlib.pyplot as plt
-
 import torchvision.transforms as transforms
 import torchvision.models as models
-
-import copy
 
 from data import image_loader, imshow
 from model import run_style_transfer
@@ -25,6 +20,7 @@ input_img = content_img.clone()
 # input_img = torch.randn(content_img.data.size(), device=device)
 
 # add the original input image to the figure:
+plt.ion()
 plt.figure()
 imshow(input_img, title='Input Image')
 
@@ -34,7 +30,7 @@ cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
 cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
 
 output = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
-                            content_img, style_img, input_img)
+                            content_img, style_img, input_img,content_weight=0.1)
 
 plt.figure()
 imshow(output, title='Output Image')
