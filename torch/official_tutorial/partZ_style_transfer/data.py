@@ -8,6 +8,8 @@ import torchvision.transforms as transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # desired size of the output image
 imsize = 512 if torch.cuda.is_available() else 128  # use small size if no gpu
 
