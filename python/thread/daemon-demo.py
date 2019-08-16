@@ -4,9 +4,12 @@
 ## for the thread stuff. refer to this
 ## https://blog.csdn.net/zhangzheng0413/article/details/41728869
 
-import watchdog
+import sys
+import time
 from queue import Queue
 from threading import Thread
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler
 
 class SqlLoaderWatchdog(PatternMatchingEventHandler):
     ''' Watches a nominated directory and when a trigger file is
@@ -50,11 +53,10 @@ def process_load_queue(q):
         if not q.empty():
             event = q.get()
             now = datetime.datetime.utcnow()
-            print "{0} -- Pulling {1} off the queue ...".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.dest_path)
-            log_path = "/path/to/logging.txt"
+            print ("{0} -- Pulling {1} off the queue ...".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.dest_path))
+            log_path = "./logging.txt"
             with open(log_path, "a") as f:
-                f.write("{0} -- Processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"),
-                event.dest_path))
+                f.write("{0} -- Processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"),event.dest_path))
 
             # read the contents of the trigger file
             cmd = "cat {0} | while read command; do $; done >> {1} 2>&1".format(event.dest_path, log_path)
