@@ -6,6 +6,10 @@
 
 import sys
 import time
+import datetime
+import subprocess
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler
 from queue import Queue
 from threading import Thread
 from watchdog.observers import Observer
@@ -37,8 +41,19 @@ class SqlLoaderWatchdog(PatternMatchingEventHandler):
         '''
         self.queue.put(event)
 
-    def on_moved(self, event):
-        self.process(event)
+    # def on_moved(self, event):
+    #     self.process(event)
+
+    def on_any_event(self, event):
+        if event.is_directory:
+            return None
+        elif event.event_type == 'created':
+            #Take any action here when a file is first created.
+            print("Received created event - %s." % event.src_path)
+            self.process(event)
+        elif event.event_type == 'modified':
+            #Take any action here when a file is modified.
+            print("Received modified event - %s." % event.src_path)
 
 
 def process_load_queue(q):
@@ -53,22 +68,27 @@ def process_load_queue(q):
         if not q.empty():
             event = q.get()
             now = datetime.datetime.utcnow()
-            print ("{0} -- Pulling {1} off the queue ...".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.dest_path))
+
+            print ("{0} -- Pulling {1} off the queue ...".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.src_path))
             log_path = "./logging.txt"
             with open(log_path, "a") as f:
-                f.write("{0} -- Processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"),event.dest_path))
+                f.write("{0} -- Processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.src_path))
+                print("{0} -- Processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.src_path))
 
-            # read the contents of the trigger file
-            cmd = "cat {0} | while read command; do $; done >> {1} 2>&1".format(event.dest_path, log_path)
-            subprocess.call(cmd, shell=True)
+            # # read the contents of the trigger file
+            # cmd = "cat {0} | while read command; do $; done >> {1} 2>&1".format(event.src_path, log_path)
+            # subprocess.call(cmd, shell=True)
+
+            time.sleep(5)
 
             # once done, remove the trigger file
-            os.remove(event.dest_path)
+            #os.remove(event.src_path)
 
             # log the operation has been completed successfully
             now = datetime.datetime.utcnow()
             with open(log_path, "a") as f:
-                f.write("{0} -- Finished processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.dest_path))
+                f.write("{0} -- Finished processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.src_path))
+                print("{0} -- Finished processing {1}...\n".format(now.strftime("%Y/%m/%d %H:%M:%S"), event.src_path))
         else:
             time.sleep(1)
 
@@ -82,6 +102,7 @@ if __name__ == '__main__':
     worker = Thread(target=process_load_queue, args=(watchdog_queue,))
     worker.setDaemon(True)
     worker.start()
+    print("worker started ...")
 
     # setup watchdog to monitor directory for trigger files
     args = sys.argv[1:]
@@ -90,6 +111,7 @@ if __name__ == '__main__':
     observer = Observer()
     observer.schedule(event_handler, path=args[0] if args else '.')
     observer.start()
+    print("file observer started ...")
 
     try:
         while True:
