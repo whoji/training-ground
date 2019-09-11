@@ -1,6 +1,7 @@
-import math
-import numpy as nump
-from lib import game, model
+import math as m
+import numpy as np
+import game
+import model
 import torch.nn.functional as F
 
 

@@ -8,7 +8,7 @@ import torch
 import numpy as np
 from matplotlib.pyplot import imshow
 import matplotlib.pyplot as plt
-from copy import deepcopy as dc
+from copy import deepcopy
 
 class Navigate2D:
     def __init__(self,N,Nobs,Dobs,Rmin):
@@ -19,6 +19,8 @@ class Navigate2D:
         self.state_dim = [N,N,3]
         self.action_dim = 4
         self.scale = 10.0
+        # self.action_sapce = np.array([[1,0],[0,1],[-1,0],[0,-1]])
+        self.action_space = [0, 1, 2, 3]
 
     def get_dims(self):
         return self.state_dim, self.action_dim
@@ -47,7 +49,7 @@ class Navigate2D:
     def step(self,grid,action):
         max_norm = self.N
 
-        new_grid = dc(grid)
+        new_grid = deepcopy(grid)
         done = False
         reward = -1.0
         act = np.array([[1,0],[0,1],[-1,0],[0,-1]])
@@ -73,7 +75,8 @@ class Navigate2D:
         #reward = (dist1 - dist2)
         return new_grid, reward, done, dist2
 
-    def get_tensor(self,grid):
+    @staticmethod
+    def get_tensor(grid):
         S = torch.Tensor(grid).transpose(2,1).transpose(1,0).unsqueeze(0)
         return S
 
