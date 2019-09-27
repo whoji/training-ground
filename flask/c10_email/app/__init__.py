@@ -7,6 +7,7 @@ import logging
 from logging.handlers import SMTPHandler
 from logging.handlers import RotatingFileHandler
 import os
+from flask_mail import Mail
 
 
 app = Flask(__name__)
@@ -17,6 +18,8 @@ migrate = Migrate(app, db) # migration engine. wtf is this ?
 
 login = LoginManager(app)
 login.login_view = 'login'
+
+mail = Mail(app)
 
 from app import routes
 from app import models # This module will define the structure of the database.
