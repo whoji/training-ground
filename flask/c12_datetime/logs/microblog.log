@@ -67,3 +67,4 @@ Traceback (most recent call last):
 jinja2.exceptions.TemplateNotFound: reset_password_request.html
 2019-10-25 15:57:24,566 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c11_facelift/app/__init__.py:51]
 2019-10-25 15:58:30,895 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c11_facelift/app/__init__.py:51]
+2019-10-25 16:26:12,961 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c12_datetime/app/__init__.py:54]
