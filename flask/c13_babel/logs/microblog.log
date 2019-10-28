@@ -1,0 +1,70 @@
+2019-09-25 16:41:42,095 ERROR: Exception on /usuer/a [GET] [in /anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py:1891]
+Traceback (most recent call last):
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/sqlalchemy/orm/base.py", line 399, in _entity_descriptor
+    return getattr(entity, key)
+AttributeError: type object 'Post' has no attribute 'username'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 2446, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1951, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1820, in handle_user_exception
+    reraise(exc_type, exc_value, tb)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/_compat.py", line 39, in reraise
+    raise value
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1949, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1935, in dispatch_request
+    return self.view_functions[rule.endpoint](**req.view_args)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask_login/utils.py", line 261, in decorated_view
+    return func(*args, **kwargs)
+  File "/Users/minlixu/Desktop/ILC/training-ground/flask/c9_pagination/app/routes.py", line 91, in user
+    posts = Post.query.filter_by(username=username)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 1800, in filter_by
+    for key, value in kwargs.items()
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/sqlalchemy/orm/query.py", line 1800, in <listcomp>
+    for key, value in kwargs.items()
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/sqlalchemy/orm/base.py", line 402, in _entity_descriptor
+    "Entity '%s' has no property '%s'" % (description, key)
+sqlalchemy.exc.InvalidRequestError: Entity '<class 'app.models.Post'>' has no property 'username'
+2019-09-25 16:43:33,168 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c9_pagination/app/__init__.py:46]
+2019-09-25 16:50:47,963 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c9_pagination/app/__init__.py:46]
+2019-09-25 17:15:39,108 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c9_pagination/app/__init__.py:46]
+2019-10-25 15:55:03,016 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c11_facelift/app/__init__.py:51]
+2019-10-25 15:56:03,334 ERROR: Exception on /reset_password_request [GET] [in /anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py:1891]
+Traceback (most recent call last):
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 2446, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1951, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1820, in handle_user_exception
+    reraise(exc_type, exc_value, tb)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/_compat.py", line 39, in reraise
+    raise value
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1949, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/app.py", line 1935, in dispatch_request
+    return self.view_functions[rule.endpoint](**req.view_args)
+  File "/Users/minlixu/Desktop/ILC/training-ground/flask/c11_facelift/app/routes.py", line 193, in reset_password_request
+    title='Reset Password', form=form)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/templating.py", line 138, in render_template
+    ctx.app.jinja_env.get_or_select_template(template_name_or_list),
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/jinja2/environment.py", line 869, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/jinja2/environment.py", line 830, in get_template
+    return self._load_template(name, self.make_globals(globals))
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/jinja2/environment.py", line 804, in _load_template
+    template = self.loader.load(self, name, globals)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/jinja2/loaders.py", line 113, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/templating.py", line 60, in get_source
+    return self._get_source_fast(environment, template)
+  File "/anaconda3/envs/web/lib/python3.7/site-packages/flask/templating.py", line 89, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: reset_password_request.html
+2019-10-25 15:57:24,566 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c11_facelift/app/__init__.py:51]
+2019-10-25 15:58:30,895 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c11_facelift/app/__init__.py:51]
+2019-10-25 16:26:12,961 INFO: Microblog startup [in /Users/minlixu/Desktop/ILC/training-ground/flask/c12_datetime/app/__init__.py:54]
