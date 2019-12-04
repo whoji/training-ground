@@ -73,7 +73,7 @@ device = "cpu"
 N = 1000
 
 x = torch.randn(N, 1, 28, 28)
-y = torch.randn(N, 10)
+y = torch.randint(0, 10, size=(N,))
 
 shared_model = NetShared().to(device)
 model_1 = NetMain(shared_model)
@@ -84,15 +84,15 @@ model_1 = Net()
 
 # Construct our loss function and an Optimizer. Training this strange model with
 # vanilla stochastic gradient descent is tough, so we use momentum
-criterion = torch.nn.MSELoss(reduction='sum')
-optimizer = torch.optim.SGD(model_1.parameters(), lr=1e-4, momentum=0.9)
+criterion = torch.nn.CrossEntropyLoss(reduction='mean')
+optimizer = torch.optim.SGD(model_1.parameters(), lr=0.01, momentum=0.9)
 for t in range(500):
     # Forward pass: Compute predicted y by passing x to the model
     y_pred = model_1(x)
 
     # Compute and print loss
     loss = criterion(y_pred, y)
-    if t % 100 == 10:
+    if t % 10 == 0:
         print(t, loss.item())
 
     # Zero gradients, perform a backward pass, and update the weights.
